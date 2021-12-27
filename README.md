@@ -6,10 +6,16 @@
 3. global registration
 4. local refinement
 
-### TODO First
-- tkinter + Panda3d 에서 3D 화면 + UI 구성 + 여러 화면 구성.
-- tkinter에서 obj 파일을 읽어 mesh를 표현.
-- tkinter에서 ply 파일을 읽어 pointcloud를 표현.
+### TODO First (UI 및 화면 구성 관련)
+
+중요도 높음
+- point cloud 표현 구현.
+- UI 구성 (Button, Dropdown...).
+
+   
+중요도 낮음
+- 5개의 화면에 대한 Camera Rotation, Zoom 구현.
+- 5개의 화면에 대한 라벨링(왼쪽 상단에 제목) 및 화면 구성 바꾸는 기능도 제공
 
 ### After1
 -> tkinter에서 pointcloud registration 테스트하는 프로그램 구성.
