@@ -1,5 +1,7 @@
 from panda3d.core import *
 
+import o3dmodule
+
 loadPrcFile("config\conf.prc")
 
 from direct.showbase.ShowBase import ShowBase
@@ -26,26 +28,28 @@ class App(ShowBase):
 
         # Models
         source = self.loader.loadModel(default_source_path).findAllMatches('**/+GeomNode')[0]
-        source = self.pointcloud(source)
         source.reparentTo(self.render)
 
         target = self.loader.loadModel(default_target_path).findAllMatches('**/+GeomNode')[0]
-        target = self.pointcloud(target)
         target.reparentTo(self.render)
 
-        source_pc = self.pointcloud(source)
-        source_pc.reparentTo(self.render)
-        source_pc.setPos(5, 0, 5)
+        source_pc = o3dmodule.read_mesh_to_pointcloud(default_source_path)
+        source_pc_node = self.pcd_to_pointcloud(source_pc)
+        source_pc_node.reparentTo(self.render)
+        source_pc_node.setPos(5, 0, 5)
 
-        source_pc_processed = self.pointcloud(source)
+        source_pc_downsampled = source_pc.voxel_down_sample(0.01)
+        source_pc_processed = self.pcd_to_pointcloud(source_pc_downsampled)
         source_pc_processed.reparentTo(self.render)
         source_pc_processed.setPos(10, 0, 10)
 
-        target_pc = self.pointcloud(target)
-        target_pc.reparentTo(self.render)
-        target_pc.setPos(15, 0, 15)
+        target_pc = o3dmodule.read_mesh_to_pointcloud(default_target_path)
+        target_pc_node = self.pcd_to_pointcloud(target_pc)
+        target_pc_node.reparentTo(self.render)
+        target_pc_node.setPos(15, 0, 15)
 
-        target_pc_processed = self.pointcloud(target)
+        target_pc_downsampled = target_pc.voxel_down_sample(0.01)
+        target_pc_processed = self.pcd_to_pointcloud(target_pc_downsampled)
         target_pc_processed.reparentTo(self.render)
         target_pc_processed.setPos(20, 0, 20)
 
@@ -60,7 +64,7 @@ class App(ShowBase):
         cam1.setLens(lens)
         camera1 = self.render.attachNewNode(cam1)
         camPivot1 = self.render.attachNewNode("cam_pivot1")
-        camPivot1.setPos(source_pc.getBounds().getCenter())
+        camPivot1.setPos(source_pc_node.getBounds().getCenter())
         camera1.reparent_to(camPivot1)
         camera1.set_y(-2)
 
@@ -76,7 +80,7 @@ class App(ShowBase):
         cam3.setLens(lens)
         camera3 = self.render.attachNewNode(cam3)
         camPivot3 = self.render.attachNewNode("cam_pivot3")
-        camPivot3.setPos(target_pc.getBounds().getCenter())
+        camPivot3.setPos(target_pc_node.getBounds().getCenter())
         camera3.reparent_to(camPivot3)
         camera3.set_y(-2)
 
@@ -170,11 +174,30 @@ class App(ShowBase):
         self.dr5.setClearColorActive(True)
         self.dr5.setClearColor((0.4, 0.4, 0.4, 0.4))
 
-    def pointcloud(self, source):
-        numOfVertex = source.node().getGeom(0).getVertexData().getNumRows()
+    def pcd_to_pointcloud(self, pcd):
+        numOfVertex = len(pcd.points)
+        _format = GeomVertexFormat.getV3t2()
+        vdata = GeomVertexData('pc', _format, Geom.UHDynamic)
+        vertex = GeomVertexWriter(vdata, 'vertex')
+        prim = GeomPoints(Geom.UH_static)
+        prim.add_next_vertices(numOfVertex)
+
+        for point in pcd.points:
+            vertex.addData3(point[0], point[1], point[2])
+
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+        node = GeomNode('PointCloud')
+        node.addGeom(geom)
+
+        node = NodePath(node)
+        return node
+
+    def gnode_to_pointcloud(self, gnode):
+        numOfVertex = gnode.node().getGeom(0).getVertexData().getNumRows()
 
         _format = GeomVertexFormat.getV3t2()
-        s_vertex = GeomVertexReader(source.node().getGeom(0).getVertexData(), 'vertex')
+        s_vertex = GeomVertexReader(gnode.node().getGeom(0).getVertexData(), 'vertex')
         vdata = GeomVertexData('pc', _format, Geom.UHDynamic)
         vertex = GeomVertexWriter(vdata, 'vertex')
         while not s_vertex.isAtEnd():
