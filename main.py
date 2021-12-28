@@ -1,6 +1,5 @@
 from panda3d.core import *
 
-# 화면 비율 2:1 권장
 loadPrcFile("config\conf.prc")
 
 from direct.showbase.ShowBase import ShowBase
@@ -146,30 +145,30 @@ class App(ShowBase):
 
         # Now, make a new pair of side-by-side DisplayRegions.
         window = dr.getWindow()
-        self.dr1 = window.makeDisplayRegion(0, 0.125, 0.75, 1)
+        self.dr1 = window.makeDisplayRegion(0, 4 / 19, 0.5, 1)
         self.dr1.setSort(dr.getSort())
         self.dr1.setClearColorActive(True)
-        self.dr1.setClearColor((0.2, 0.2, 0.2, 0.2))
+        self.dr1.setClearColor((0, 0, 0, 0))
 
-        self.dr2 = window.makeDisplayRegion(0, 0.125, 0.5, 0.75)
+        self.dr2 = window.makeDisplayRegion(4 / 19, 8 / 19, 0.5, 1)
         self.dr2.setSort(dr.getSort())
         self.dr2.setClearColorActive(True)
-        self.dr2.setClearColor((0, 0, 0, 0))
+        self.dr2.setClearColor((0.1, 0.1, 0.1, 0.1))
 
-        self.dr3 = window.makeDisplayRegion(0, 0.125, 0.25, 0.5)
+        self.dr3 = window.makeDisplayRegion(0, 4 / 19, 0, 0.5)
         self.dr3.setSort(dr.getSort())
         self.dr3.setClearColorActive(True)
         self.dr3.setClearColor((0.2, 0.2, 0.2, 0.2))
 
-        self.dr4 = window.makeDisplayRegion(0, 0.125, 0, 0.25)
+        self.dr4 = window.makeDisplayRegion(4 / 19, 8 / 19, 0, 0.5)
         self.dr4.setSort(dr.getSort())
         self.dr4.setClearColorActive(True)
-        self.dr4.setClearColor((0, 0, 0, 0))
+        self.dr4.setClearColor((0.3, 0.3, 0.3, 0.3))
 
-        self.dr5 = window.makeDisplayRegion(0.125, 0.625, 0, 1)
+        self.dr5 = window.makeDisplayRegion(8 / 19, 16 / 19, 0, 1)
         self.dr5.setSort(dr.getSort())
         self.dr5.setClearColorActive(True)
-        self.dr5.setClearColor((0.1, 0.1, 0.1, 0.1))
+        self.dr5.setClearColor((0.4, 0.4, 0.4, 0.4))
 
     def pointcloud(self, source):
         numOfVertex = source.node().getGeom(0).getVertexData().getNumRows()
