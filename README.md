@@ -9,7 +9,7 @@
 ### TODO First (UI 및 화면 구성 관련)
 
 중요도 높음
-- point cloud 표현 구현.
+- open3d pointcloud <-> panda3d pointcloud data 변환 구현
 - UI 구성 (Button, Dropdown...).
 
    

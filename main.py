@@ -26,25 +26,27 @@ class App(ShowBase):
         self.setDisplayRegion()
 
         # Models
-        source = self.loader.loadModel(default_source_path)
+        source = self.loader.loadModel(default_source_path).findAllMatches('**/+GeomNode')[0]
+        source = self.pointcloud(source)
         source.reparentTo(self.render)
 
-        target = self.loader.loadModel(default_target_path)
+        target = self.loader.loadModel(default_target_path).findAllMatches('**/+GeomNode')[0]
+        target = self.pointcloud(target)
         target.reparentTo(self.render)
 
-        source_pc_original = self.loader.loadModel(default_source_path)
-        source_pc_original.reparentTo(self.render)
-        source_pc_original.setPos(5, 0, 5)
+        source_pc = self.pointcloud(source)
+        source_pc.reparentTo(self.render)
+        source_pc.setPos(5, 0, 5)
 
-        source_pc_processed = self.loader.loadModel(default_source_path)
+        source_pc_processed = self.pointcloud(source)
         source_pc_processed.reparentTo(self.render)
         source_pc_processed.setPos(10, 0, 10)
 
-        target_pc_original = self.loader.loadModel(default_target_path)
-        target_pc_original.reparentTo(self.render)
-        target_pc_original.setPos(15, 0, 15)
+        target_pc = self.pointcloud(target)
+        target_pc.reparentTo(self.render)
+        target_pc.setPos(15, 0, 15)
 
-        target_pc_processed = self.loader.loadModel(default_target_path)
+        target_pc_processed = self.pointcloud(target)
         target_pc_processed.reparentTo(self.render)
         target_pc_processed.setPos(20, 0, 20)
 
@@ -59,7 +61,7 @@ class App(ShowBase):
         cam1.setLens(lens)
         camera1 = self.render.attachNewNode(cam1)
         camPivot1 = self.render.attachNewNode("cam_pivot1")
-        camPivot1.setPos(source_pc_original.getBounds().getCenter())
+        camPivot1.setPos(source_pc.getBounds().getCenter())
         camera1.reparent_to(camPivot1)
         camera1.set_y(-2)
 
@@ -75,7 +77,7 @@ class App(ShowBase):
         cam3.setLens(lens)
         camera3 = self.render.attachNewNode(cam3)
         camPivot3 = self.render.attachNewNode("cam_pivot3")
-        camPivot3.setPos(target_pc_original.getBounds().getCenter())
+        camPivot3.setPos(target_pc.getBounds().getCenter())
         camera3.reparent_to(camPivot3)
         camera3.set_y(-2)
 
@@ -168,6 +170,27 @@ class App(ShowBase):
         self.dr5.setSort(dr.getSort())
         self.dr5.setClearColorActive(True)
         self.dr5.setClearColor((0.1, 0.1, 0.1, 0.1))
+
+    def pointcloud(self, source):
+        numOfVertex = source.node().getGeom(0).getVertexData().getNumRows()
+
+        _format = GeomVertexFormat.getV3t2()
+        s_vertex = GeomVertexReader(source.node().getGeom(0).getVertexData(), 'vertex')
+        vdata = GeomVertexData('pc', _format, Geom.UHDynamic)
+        vertex = GeomVertexWriter(vdata, 'vertex')
+        while not s_vertex.isAtEnd():
+            vertex.addData3(s_vertex.getData3())
+
+        prim = GeomPoints(Geom.UH_static)
+        prim.add_next_vertices(numOfVertex)
+
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+        node = GeomNode('PointCloud')
+        node.addGeom(geom)
+
+        node = NodePath(node)
+        return node
 
     # Functions for camera zoom
     def zoom_out(self):
