@@ -1,6 +1,7 @@
 from panda3d.core import *
 
 import o3dmodule
+import util
 
 loadPrcFile("config\conf.prc")
 
@@ -27,18 +28,22 @@ class App(ShowBase):
         self.setDisplayRegion()
 
         # Models
-        source = self.loader.loadModel(default_source_path).findAllMatches('**/+GeomNode')[0]
-        source.reparentTo(self.render)
+        voxel_size = 0.005
 
-        target = self.loader.loadModel(default_target_path).findAllMatches('**/+GeomNode')[0]
-        target.reparentTo(self.render)
+        self.source = self.loader.loadModel(default_source_path).findAllMatches('**/+GeomNode')[0]
+        self.source.setColorScale(1, 0.5, 0.5, 1)
+        self.source.reparentTo(self.render)
+
+        self.target = self.loader.loadModel(default_target_path).findAllMatches('**/+GeomNode')[0]
+        self.target.setColorScale(0.5, 1, 0.5, 1)
+        self.target.reparentTo(self.render)
 
         source_pc = o3dmodule.read_mesh_to_pointcloud(default_source_path)
         source_pc_node = self.pcd_to_pointcloud(source_pc)
         source_pc_node.reparentTo(self.render)
         source_pc_node.setPos(5, 0, 5)
 
-        source_pc_downsampled = source_pc.voxel_down_sample(0.01)
+        source_pc_downsampled = o3dmodule.down_sampling(source_pc, voxel_size)
         source_pc_processed = self.pcd_to_pointcloud(source_pc_downsampled)
         source_pc_processed.reparentTo(self.render)
         source_pc_processed.setPos(10, 0, 10)
@@ -48,10 +53,18 @@ class App(ShowBase):
         target_pc_node.reparentTo(self.render)
         target_pc_node.setPos(15, 0, 15)
 
-        target_pc_downsampled = target_pc.voxel_down_sample(0.01)
+        target_pc_downsampled = o3dmodule.down_sampling(target_pc, voxel_size)
         target_pc_processed = self.pcd_to_pointcloud(target_pc_downsampled)
         target_pc_processed.reparentTo(self.render)
         target_pc_processed.setPos(20, 0, 20)
+
+        """ global registration """
+        global_result = o3dmodule.global_registration(source_pc_downsampled, target_pc_downsampled, voxel_size)
+        #self.source.setMat(util.numpy_array_to_mat4(global_result.transformation))
+
+        """ local registration """
+        local_result = o3dmodule.local_registration_gicp(source_pc_downsampled, target_pc_downsampled, global_result.transformation, voxel_size)
+        self.source.setMat(util.numpy_array_to_mat4(local_result.transformation))
 
         """ Define camera parameters """
         lens = self.defaultLens()
@@ -96,7 +109,7 @@ class App(ShowBase):
         self.cam5.setLens(lens)
         self.camera5 = self.render.attachNewNode(self.cam5)
         self.camPivot5 = self.render.attachNewNode("cam_pivot5")
-        self.camPivot5.setPos(target.getBounds().getCenter())
+        self.camPivot5.setPos(self.target.getBounds().getCenter())
         self.camera5.reparent_to(self.camPivot5)
         self.camera5.set_y(-2)
 
