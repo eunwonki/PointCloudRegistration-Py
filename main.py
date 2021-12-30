@@ -1,3 +1,4 @@
+from direct.gui.DirectButton import DirectButton
 from panda3d.core import *
 
 import o3dmodule
@@ -28,7 +29,7 @@ class App(ShowBase):
         self.setDisplayRegion()
 
         # Models
-        voxel_size = 0.005
+        self.voxel_size = 0.005
 
         self.source = self.loader.loadModel(default_source_path).findAllMatches('**/+GeomNode')[0]
         self.source.setColorScale(1, 0.5, 0.5, 1)
@@ -43,8 +44,8 @@ class App(ShowBase):
         source_pc_node.reparentTo(self.render)
         source_pc_node.setPos(5, 0, 5)
 
-        source_pc_downsampled = o3dmodule.down_sampling(source_pc, voxel_size)
-        source_pc_processed = self.pcd_to_pointcloud(source_pc_downsampled)
+        self.source_pc_downsampled = o3dmodule.down_sampling(source_pc, self.voxel_size)
+        source_pc_processed = self.pcd_to_pointcloud(self.source_pc_downsampled)
         source_pc_processed.reparentTo(self.render)
         source_pc_processed.setPos(10, 0, 10)
 
@@ -53,18 +54,10 @@ class App(ShowBase):
         target_pc_node.reparentTo(self.render)
         target_pc_node.setPos(15, 0, 15)
 
-        target_pc_downsampled = o3dmodule.down_sampling(target_pc, voxel_size)
-        target_pc_processed = self.pcd_to_pointcloud(target_pc_downsampled)
+        self.target_pc_downsampled = o3dmodule.down_sampling(target_pc, self.voxel_size)
+        target_pc_processed = self.pcd_to_pointcloud(self.target_pc_downsampled)
         target_pc_processed.reparentTo(self.render)
         target_pc_processed.setPos(20, 0, 20)
-
-        """ global registration """
-        global_result = o3dmodule.global_registration(source_pc_downsampled, target_pc_downsampled, voxel_size)
-        #self.source.setMat(util.numpy_array_to_mat4(global_result.transformation))
-
-        """ local registration """
-        local_result = o3dmodule.local_registration_gicp(source_pc_downsampled, target_pc_downsampled, global_result.transformation, voxel_size)
-        self.source.setMat(util.numpy_array_to_mat4(local_result.transformation))
 
         """ Define camera parameters """
         lens = self.defaultLens()
@@ -186,6 +179,22 @@ class App(ShowBase):
         self.dr5.setSort(dr.getSort())
         self.dr5.setClearColorActive(True)
         self.dr5.setClearColor((0.4, 0.4, 0.4, 0.4))
+
+        self.dr6 = window.makeDisplayRegion(16 / 19, 1, 0, 1)
+        self.dr6.setSort(dr.getSort())
+        self.dr6.setClearColorActive(True)
+        self.dr6.setClearColor((0.5, 0.5, 0, 1))
+
+        button = DirectButton(text=["global registration"], pos=(2,0,0.1), scale=0.05, command=self.global_registration)
+        button = DirectButton(text=["local registration"], pos=(2,0,0), scale=0.05, command=self.local_registration)
+
+    def global_registration(self):
+        self.global_result = o3dmodule.global_registration(self.source_pc_downsampled, self.target_pc_downsampled, self.voxel_size)
+        self.source.setMat(util.numpy_array_to_mat4(self.global_result.transformation))
+
+    def local_registration(self):
+        local_result = o3dmodule.local_registration_gicp(self.source_pc_downsampled, self.target_pc_downsampled, self.global_result.transformation, self.voxel_size)
+        self.source.setMat(util.numpy_array_to_mat4(local_result.transformation))
 
     def pcd_to_pointcloud(self, pcd):
         numOfVertex = len(pcd.points)
