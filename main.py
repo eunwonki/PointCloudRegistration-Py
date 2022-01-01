@@ -39,25 +39,21 @@ class App(ShowBase):
         self.target.setColorScale(0.5, 1, 0.5, 1)
         self.target.reparentTo(self.render)
 
-        source_pc = o3dmodule.read_mesh_to_pointcloud(default_source_path)
-        source_pc_node = self.pcd_to_pointcloud(source_pc)
+        source_pc_node = util.mesh_node_to_point_cloud_node(self.source)
         source_pc_node.reparentTo(self.render)
         source_pc_node.setPos(5, 0, 5)
 
-        self.source_pc_downsampled = o3dmodule.down_sampling(source_pc, self.voxel_size)
-        source_pc_processed = self.pcd_to_pointcloud(self.source_pc_downsampled)
-        source_pc_processed.reparentTo(self.render)
-        source_pc_processed.setPos(10, 0, 10)
+        self.source_pc_processed = util.process(source_pc_node, self.voxel_size)
+        self.source_pc_processed.reparentTo(self.render)
+        self.source_pc_processed.setPos(10, 0, 10)
 
-        target_pc = o3dmodule.read_mesh_to_pointcloud(default_target_path)
-        target_pc_node = self.pcd_to_pointcloud(target_pc)
+        target_pc_node = util.mesh_node_to_point_cloud_node(self.target)
         target_pc_node.reparentTo(self.render)
         target_pc_node.setPos(15, 0, 15)
 
-        self.target_pc_downsampled = o3dmodule.down_sampling(target_pc, self.voxel_size)
-        target_pc_processed = self.pcd_to_pointcloud(self.target_pc_downsampled)
-        target_pc_processed.reparentTo(self.render)
-        target_pc_processed.setPos(20, 0, 20)
+        self.target_pc_processed = util.process(target_pc_node, self.voxel_size)
+        self.target_pc_processed.reparentTo(self.render)
+        self.target_pc_processed.setPos(20, 0, 20)
 
         """ Define camera parameters """
         lens = self.defaultLens()
@@ -78,7 +74,7 @@ class App(ShowBase):
         cam2.setLens(lens)
         camera2 = self.render.attachNewNode(cam2)
         camPivot2 = self.render.attachNewNode("cam_pivot2")
-        camPivot2.setPos(source_pc_processed.getBounds().getCenter())
+        camPivot2.setPos(self.source_pc_processed.getBounds().getCenter())
         camera2.reparent_to(camPivot2)
         camera2.set_y(-2)
 
@@ -94,7 +90,7 @@ class App(ShowBase):
         cam4.setLens(lens)
         camera4 = self.render.attachNewNode(cam4)
         camPivot4 = self.render.attachNewNode("cam_pivot4")
-        camPivot4.setPos(target_pc_processed.getBounds().getCenter())
+        camPivot4.setPos(self.target_pc_processed.getBounds().getCenter())
         camera4.reparent_to(camPivot4)
         camera4.set_y(-2)
 
@@ -189,52 +185,12 @@ class App(ShowBase):
         button = DirectButton(text=["local registration"], pos=(2,0,0), scale=0.05, command=self.local_registration)
 
     def global_registration(self):
-        self.global_result = o3dmodule.global_registration(self.source_pc_downsampled, self.target_pc_downsampled, self.voxel_size)
-        self.source.setMat(util.numpy_array_to_mat4(self.global_result.transformation))
+        result = util.global_registration(self.source_pc_processed, self.target_pc_processed, self.voxel_size)
+        self.source.setMat(util.numpy_array_to_mat4(result.transformation))
 
     def local_registration(self):
-        local_result = o3dmodule.local_registration_gicp(self.source_pc_downsampled, self.target_pc_downsampled, self.global_result.transformation, self.voxel_size)
-        self.source.setMat(util.numpy_array_to_mat4(local_result.transformation))
-
-    def pcd_to_pointcloud(self, pcd):
-        numOfVertex = len(pcd.points)
-        _format = GeomVertexFormat.getV3t2()
-        vdata = GeomVertexData('pc', _format, Geom.UHDynamic)
-        vertex = GeomVertexWriter(vdata, 'vertex')
-        prim = GeomPoints(Geom.UH_static)
-        prim.add_next_vertices(numOfVertex)
-
-        for point in pcd.points:
-            vertex.addData3(point[0], point[1], point[2])
-
-        geom = Geom(vdata)
-        geom.addPrimitive(prim)
-        node = GeomNode('PointCloud')
-        node.addGeom(geom)
-
-        node = NodePath(node)
-        return node
-
-    def gnode_to_pointcloud(self, gnode):
-        numOfVertex = gnode.node().getGeom(0).getVertexData().getNumRows()
-
-        _format = GeomVertexFormat.getV3t2()
-        s_vertex = GeomVertexReader(gnode.node().getGeom(0).getVertexData(), 'vertex')
-        vdata = GeomVertexData('pc', _format, Geom.UHDynamic)
-        vertex = GeomVertexWriter(vdata, 'vertex')
-        while not s_vertex.isAtEnd():
-            vertex.addData3(s_vertex.getData3())
-
-        prim = GeomPoints(Geom.UH_static)
-        prim.add_next_vertices(numOfVertex)
-
-        geom = Geom(vdata)
-        geom.addPrimitive(prim)
-        node = GeomNode('PointCloud')
-        node.addGeom(geom)
-
-        node = NodePath(node)
-        return node
+        result = util.local_registration(self.source_pc_processed, self.target_pc_processed, util.numpy_array_to_mat4(self.source.getMat()), self.voxel_size)
+        self.source.setMat(util.numpy_array_to_mat4(result.transformation))
 
     # Functions for camera zoom
     def zoom_out(self):

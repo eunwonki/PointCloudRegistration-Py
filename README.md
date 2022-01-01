@@ -9,7 +9,6 @@
 ### TODO First (UI 및 화면 구성 관련)
 
 중요도 높음
-- open3d pointcloud <-> panda3d pointcloud data 변환 구현
 - UI 구성 (Button, Dropdown...).
 
    
@@ -19,6 +18,3 @@
 
 ### After1
 -> tkinter에서 pointcloud registration 테스트하는 프로그램 구성.
-
-### After2
--> pointcloud registration을 가능하게 하는 여러 라이브러리나 구성 포함.
