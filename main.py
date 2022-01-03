@@ -315,7 +315,8 @@ class App(ShowBase):
         self.source.setMat(LMatrix4f.identMat())
 
     def global_registration(self):
-        result = util.global_registration(self.source_processed_pc, self.target_processed_pc, self.voxel_size)
+        fast = False
+        result = util.global_registration(self.source_processed_pc, self.target_processed_pc, self.voxel_size, fast)
         self.source.setMat(util.numpy_array_to_mat4(result.transformation))
 
     def local_registration(self):

@@ -1,5 +1,6 @@
 import open3d as o3d
 import numpy as np
+import time
 from panda3d.core import *
 
 import o3dmodule
@@ -29,16 +30,22 @@ def process(source_node, voxel_size):
     return pcd_to_geom_node(downsampled_pcd)
 
 
-def global_registration(source_node, target_node, voxel_size):
+def global_registration(source_node, target_node, voxel_size, fast):
     source_pcd = geom_node_to_pcd(source_node)
     target_pcd = geom_node_to_pcd(target_node)
-    return o3dmodule.global_registration(source_pcd, target_pcd, voxel_size)
+    start = time.time()
+    result = o3dmodule.global_registration_ransac_based_on_fpfh(source_pcd, target_pcd, voxel_size, fast)
+    print("Cost Time: %.3f sec" % (time.time() - start))
+    return result
 
 
 def local_registration(source_node, target_node, initial_transformation, voxel_size):
     source_pcd = geom_node_to_pcd(source_node)
     target_pcd = geom_node_to_pcd(target_node)
-    return o3dmodule.local_registration_gicp(source_pcd, target_pcd, initial_transformation, voxel_size)
+    start = time.time()
+    result = o3dmodule.local_registration_gicp(source_pcd, target_pcd, initial_transformation, voxel_size)
+    print("Cost Time: %.3f sec" % (time.time() - start))
+    return result
 
 
 def mesh_node_to_point_cloud_node(source_node):
