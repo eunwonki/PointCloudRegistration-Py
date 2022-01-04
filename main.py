@@ -16,14 +16,22 @@ class App(ShowBase):
     def __init__(self):
         ShowBase.__init__(self, windowType='none')
 
+        self.source_path_label = None
         self.target_path_label = None
-        self.source = None
-        self.source_pc_node = None
-        self.source_processed_pc = None
 
-        self.target = None
+        self.source_parent_node = NodePath("source_parent")
+        self.source_parent_node.reparentTo(self.render)
+
+        self.source_mesh_node = None
+        self.source_pc_node = None
+        self.source_processed_pc_node = None
+
+        self.target_parent_node = NodePath("target_parent")
+        self.target_parent_node.reparentTo(self.render)
+
+        self.target_mesh_node = None
         self.target_pc_node = None
-        self.target_processed_pc = None
+        self.target_processed_pc_node = None
 
         self.source_pc_view = None
         self.source_processed_pc_view = None
@@ -35,15 +43,21 @@ class App(ShowBase):
         self.start_tk()
 
         frame = self.tkRoot
-        frame.geometry('1900x800')
+        frame.geometry('1280x960')
         frame.title('PointCLoudRegistration')
 
-        menubar = tkinter.Menu(frame)
-        filemenu = tkinter.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="File", menu=filemenu)
-        filemenu.add_command(label="Change Source", command=self.change_source)
-        filemenu.add_command(label="Change Target", command=self.change_target)
-        frame.config(menu=menubar)
+        menu_bar = tkinter.Menu(frame)
+        file_menu = tkinter.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Change Source", command=self.change_source)
+        file_menu.add_command(label="Change Target", command=self.change_target)
+        view_menu = tkinter.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="View", menu=view_menu)
+        view_menu.add_command(label="Source Mesh", command=self.switch_mesh)
+        view_menu.add_command(label="Source Point Cloud", command=self.switch_source_pc)
+        view_menu.add_command(label="Filtered Point Cloud", command=self.switch_source_processed_pc)
+
+        frame.config(menu=menu_bar)
 
         frame.update()
 
@@ -78,52 +92,16 @@ class App(ShowBase):
         self.camZoomStep = 1
 
         # Camera
-        cam1 = Camera("cam1")
-        cam1.setLens(lens)
-        camera1 = self.render.attachNewNode(cam1)
-        camPivot1 = self.render.attachNewNode("cam_pivot1")
-        camPivot1.setPos(self.source_pc_node.getBounds().getCenter())
-        camera1.reparent_to(camPivot1)
-        camera1.set_y(-2)
-
-        cam2 = Camera("cam2")
-        cam2.setLens(lens)
-        camera2 = self.render.attachNewNode(cam2)
-        camPivot2 = self.render.attachNewNode("cam_pivot2")
-        camPivot2.setPos(self.source_processed_pc.getBounds().getCenter())
-        camera2.reparent_to(camPivot2)
-        camera2.set_y(-2)
-
-        cam3 = Camera("cam3")
-        cam3.setLens(lens)
-        camera3 = self.render.attachNewNode(cam3)
-        camPivot3 = self.render.attachNewNode("cam_pivot3")
-        camPivot3.setPos(self.target_pc_node.getBounds().getCenter())
-        camera3.reparent_to(camPivot3)
-        camera3.set_y(-2)
-
-        cam4 = Camera("cam4")
-        cam4.setLens(lens)
-        camera4 = self.render.attachNewNode(cam4)
-        camPivot4 = self.render.attachNewNode("cam_pivot4")
-        camPivot4.setPos(self.target_processed_pc.getBounds().getCenter())
-        camera4.reparent_to(camPivot4)
-        camera4.set_y(-2)
-
-        self.cam5 = Camera("cam5")
-        self.cam5.setLens(lens)
-        self.camera5 = self.render.attachNewNode(self.cam5)
-        self.camPivot5 = self.render.attachNewNode("cam_pivot5")
-        self.camPivot5.setPos(self.target.getBounds().getCenter())
-        self.camera5.reparent_to(self.camPivot5)
-        self.camera5.set_y(-2)
+        self.cam = Camera("cam5")
+        self.cam.setLens(lens)
+        self.camera = self.render.attachNewNode(self.cam)
+        self.camPivot = self.render.attachNewNode("cam_pivot")
+        self.camPivot.setPos(self.target_pc_node.getBounds().getCenter())
+        self.camera.reparent_to(self.camPivot)
+        self.camera.set_y(-2)
 
         # Setup each camera.
-        self.source_pc_view.setCamera(camera1)
-        self.source_processed_pc_view.setCamera(camera2)
-        self.target_pc_view.setCamera(camera3)
-        self.target_processed_pc_view.setCamera(camera4)
-        self.registration_view.setCamera(self.camera5)
+        self.registration_view.setCamera(self.camera)
 
         """Disable the mouse and set up mouse-view functions"""
         self.disableMouse()
@@ -144,23 +122,21 @@ class App(ShowBase):
         filepath = os.path.abspath(filepath)
         filepath = Filename.fromOsSpecific(filepath).getFullpath()
 
-        if self.source is not None:
-            self.source.removeNode()
-        self.source = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
-        self.source.setColorScale(1, 0.5, 0.5, 1)
-        self.source.reparentTo(self.render)
+        if self.source_mesh_node is not None:
+            self.source_mesh_node.removeNode()
+        self.source_mesh_node = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
+        self.source_mesh_node.setColorScale(1, 0.5, 0.5, 1)
+        self.source_mesh_node.reparentTo(self.source_parent_node)
 
         if self.source_pc_node is not None:
             self.source_pc_node.removeNode()
-        self.source_pc_node = util.mesh_node_to_point_cloud_node(self.source)
-        self.source_pc_node.reparentTo(self.render)
-        self.source_pc_node.setPos(5, 0, 5)
+        self.source_pc_node = util.mesh_node_to_point_cloud_node(self.source_mesh_node)
+        self.source_pc_node.reparentTo(self.source_parent_node)
 
-        if self.source_processed_pc is not None:
-            self.source_processed_pc.removeNode()
-        self.source_processed_pc = util.process(self.source_pc_node, self.voxel_size)
-        self.source_processed_pc.reparentTo(self.render)
-        self.source_processed_pc.setPos(10, 0, 10)
+        if self.source_processed_pc_node is not None:
+            self.source_processed_pc_node.removeNode()
+        self.source_processed_pc_node = util.process(self.source_pc_node, self.voxel_size)
+        self.source_processed_pc_node.reparentTo(self.source_parent_node)
 
         self.init_transform()
 
@@ -171,23 +147,21 @@ class App(ShowBase):
         filepath = os.path.abspath(filepath)
         filepath = Filename.fromOsSpecific(filepath).getFullpath()
 
-        if self.target is not None:
-            self.target.removeNode()
-        self.target = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
-        self.target.setColorScale(0.5, 1, 0.5, 1)
-        self.target.reparentTo(self.render)
+        if self.target_mesh_node is not None:
+            self.target_mesh_node.removeNode()
+        self.target_mesh_node = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
+        self.target_mesh_node.setColorScale(0.5, 1, 0.5, 1)
+        self.target_mesh_node.reparentTo(self.target_parent_node)
 
         if self.target_pc_node is not None:
             self.target_pc_node.removeNode()
-        self.target_pc_node = util.mesh_node_to_point_cloud_node(self.target)
-        self.target_pc_node.reparentTo(self.render)
-        self.target_pc_node.setPos(15, 0, 15)
+        self.target_pc_node = util.mesh_node_to_point_cloud_node(self.target_mesh_node)
+        self.target_pc_node.reparentTo(self.target_parent_node)
 
-        if self.target_processed_pc is not None:
-            self.target_processed_pc.removeNode()
-        self.target_processed_pc = util.process(self.target_pc_node, self.voxel_size)
-        self.target_processed_pc.reparentTo(self.render)
-        self.target_processed_pc.setPos(20, 0, 20)
+        if self.target_processed_pc_node is not None:
+            self.target_processed_pc_node.removeNode()
+        self.target_processed_pc_node = util.process(self.target_pc_node, self.voxel_size)
+        self.target_processed_pc_node.reparentTo(self.target_parent_node)
 
         self.target_path_label["text"] = filepath
 
@@ -221,14 +195,7 @@ class App(ShowBase):
         light.set_color((1, 1, 1, 1))
         light = self.render.attachNewNode(light)
         light.reparentTo(self.render)
-        light.setPos(10, 0, 10)
-        self.render.setLight(light)
-
-        light = PointLight('Light')
-        light.set_color((1, 1, 1, 1))
-        light = self.render.attachNewNode(light)
-        light.reparentTo(self.render)
-        light.setPos(20, 0, 20)
+        light.setPos(1, 1, 1)
         self.render.setLight(light)
 
     def setDisplayRegion(self):
@@ -238,66 +205,47 @@ class App(ShowBase):
 
         # Now, make a new pair of side-by-side DisplayRegions.
         window = dr.getWindow()
-        self.source_pc_view = window.makeDisplayRegion(0, 4 / 19, 0.5, 1)
-        self.source_pc_view.setSort(dr.getSort())
-        self.source_pc_view.setClearColorActive(True)
-        self.source_pc_view.setClearColor((0, 0, 0, 0))
 
-        self.source_processed_pc_view = window.makeDisplayRegion(4 / 19, 8 / 19, 0.5, 1)
-        self.source_processed_pc_view.setSort(dr.getSort())
-        self.source_processed_pc_view.setClearColorActive(True)
-        self.source_processed_pc_view.setClearColor((0.1, 0.1, 0.1, 0.1))
-
-        self.target_pc_view = window.makeDisplayRegion(0, 4 / 19, 0, 0.5)
-        self.target_pc_view.setSort(dr.getSort())
-        self.target_pc_view.setClearColorActive(True)
-        self.target_pc_view.setClearColor((0.2, 0.2, 0.2, 0.2))
-
-        self.target_processed_pc_view = window.makeDisplayRegion(4 / 19, 8 / 19, 0, 0.5)
-        self.target_processed_pc_view.setSort(dr.getSort())
-        self.target_processed_pc_view.setClearColorActive(True)
-        self.target_processed_pc_view.setClearColor((0.3, 0.3, 0.3, 0.3))
-
-        self.registration_view = window.makeDisplayRegion(8 / 19, 16 / 19, 0, 1)
+        self.registration_view = window.makeDisplayRegion(0, 3 / 4, 0, 1)
         self.registration_view.setSort(dr.getSort())
         self.registration_view.setClearColorActive(True)
         self.registration_view.setClearColor((0.4, 0.4, 0.4, 0.4))
 
-        self.ui_view = window.makeDisplayRegion(16 / 19, 1, 0, 1)
+        self.ui_view = window.makeDisplayRegion(3 / 4, 1, 0, 1)
         self.ui_view.setSort(dr.getSort())
         self.ui_view.setClearColorActive(True)
         self.ui_view.setClearColor((0.5, 0.5, 0, 1))
 
-        myCamera2d = NodePath(Camera('myCam2d'))
+        camera2d = NodePath(Camera('cam2d'))
         lens = OrthographicLens()
         lens.setFilmSize(2, 2)
         lens.setNearFar(-1000, 1000)
-        myCamera2d.node().setLens(lens)
+        camera2d.node().setLens(lens)
 
-        myRender2d = NodePath('myRender2d')
-        myRender2d.setDepthTest(False)
-        myRender2d.setDepthWrite(False)
-        myCamera2d.reparentTo(myRender2d)
-        self.ui_view.setCamera(myCamera2d)
+        render2d = NodePath('render2d')
+        render2d.setDepthTest(False)
+        render2d.setDepthWrite(False)
+        camera2d.reparentTo(render2d)
+        self.ui_view.setCamera(camera2d)
 
-        myAspect2d = myRender2d.attachNewNode(PGTop('myAspect2d'))
-        mw_node = MouseWatcher("my_mouse_watcher")
+        aspect2d = render2d.attachNewNode(PGTop('aspect2d'))
+        mw_node = MouseWatcher("mouse_watcher")
         mw_node.set_display_region(self.ui_view)
         input_ctrl = self.mouseWatcher.parent
         mw = input_ctrl.attach_new_node(mw_node)
-        bt_node = ButtonThrower("my_btn_thrower")
+        bt_node = ButtonThrower("btn_thrower")
         mw.attach_new_node(bt_node)
-        myAspect2d.node().setMouseWatcher(mw_node)
+        aspect2d.node().setMouseWatcher(mw_node)
 
         font = self.loader.loadFont('config/arial.ttf', 0)
         font.setPointSize(10)
 
-        self.source_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1, parent=myAspect2d, frameSize=(-1, 1, -.2, .1), pos=(0,0,0.9))
-        self.target_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1, parent=myAspect2d, frameSize=(-1, 1, -.2, .1), pos=(0,0,0.55))
+        self.source_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1, parent=aspect2d, frameSize=(-1, 1, -.2, .1), pos=(0,0,0.9))
+        self.target_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1, parent=aspect2d, frameSize=(-1, 1, -.2, .1), pos=(0,0,0.55))
 
-        DirectButton(text=["init"], parent=myAspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,0.2), command=self.init_transform)
-        DirectButton(text=["global registration"], parent=myAspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,0), command=self.global_registration)
-        DirectButton(text=["local registration"], parent=myAspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,-0.2), command=self.local_registration)
+        DirectButton(text=["init"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,0.2), command=self.init_transform)
+        DirectButton(text=["global registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,0), command=self.global_registration)
+        DirectButton(text=["local registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,-0.2), command=self.local_registration)
 
     def change_source(self):
         file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file",
@@ -311,31 +259,50 @@ class App(ShowBase):
                                                              ("all files", "*.*")))
         self.load_target(file)
 
+
+    def switch_mesh(self):
+        self.switch_node(self.source_mesh_node)
+        self.switch_node(self.target_mesh_node)
+
+    def switch_source_pc(self):
+        self.switch_node(self.source_pc_node)
+        self.switch_node(self.target_pc_node)
+
+    def switch_source_processed_pc(self):
+        self.switch_node(self.source_processed_pc_node)
+        self.switch_node(self.target_processed_pc_node)
+
+    def switch_node(self, node):
+        if node.isHidden():
+            node.show()
+        else:
+            node.hide()
+
     def init_transform(self):
-        self.source.setMat(LMatrix4f.identMat())
+        self.source_parent_node.setMat(LMatrix4f.identMat())
 
     def global_registration(self):
         fast = False
-        result = util.global_registration(self.source_processed_pc, self.target_processed_pc, self.voxel_size, fast)
-        self.source.setMat(util.numpy_array_to_mat4(result.transformation))
+        result = util.global_registration(self.source_processed_pc_node, self.target_processed_pc_node, self.voxel_size, fast)
+        self.source_parent_node.setMat(util.numpy_array_to_mat4(result.transformation))
 
     def local_registration(self):
-        result = util.local_registration(self.source_processed_pc, self.target_processed_pc,
-                                         util.numpy_array_to_mat4(self.source.getMat()), self.voxel_size)
-        self.source.setMat(util.numpy_array_to_mat4(result.transformation))
+        result = util.local_registration(self.source_processed_pc_node, self.target_processed_pc_node,
+                                         util.numpy_array_to_mat4(self.source_parent_node.getMat()), self.voxel_size)
+        self.source_parent_node.setMat(util.numpy_array_to_mat4(result.transformation))
 
     # Functions for camera zoom
     def zoom_out(self):
         """Translate the camera along the y axis of its matrix to zoom out the view"""
         self.view_changed = True
-        self.camera5.setPos(self.camera5.getMat().xform((0, -self.camZoomStep, 0, 1)).getXyz())
+        self.camera.setPos(self.camera.getMat().xform((0, -self.camZoomStep, 0, 1)).getXyz())
 
     def zoom_in(self):
         """Translate the camera along the y axis its matrix to zoom in the view"""
         self.view_changed = True
-        camPos = self.camera5.getPos()
-        newCamPos = self.camera5.getMat().xform((0, self.camZoomStep, 0, 1)).getXyz()
-        self.camera5.setPos(newCamPos)
+        camPos = self.camera.getPos()
+        newCamPos = self.camera.getMat().xform((0, self.camZoomStep, 0, 1)).getXyz()
+        self.camera.setPos(newCamPos)
 
     # Functions for camera rotation
     def wheel_down(self):
@@ -353,7 +320,7 @@ class App(ShowBase):
                 self.lastMousePos = Point2(mouse_pos)
             else:
                 d_heading, d_pitch = (mouse_pos - self.lastMousePos) * 100.
-                pivot = self.camPivot5
+                pivot = self.camPivot
                 pivot.set_hpr(pivot.get_h() - d_heading, pivot.get_p() + d_pitch, 0.)
                 self.view_changed = True
                 self.lastMousePos = Point2(mouse_pos)
