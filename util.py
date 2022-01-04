@@ -58,12 +58,16 @@ def local_registration(source_node, target_node, initial_transformation, voxel_s
 def mesh_node_to_point_cloud_node(source_node):
     numOfVertex = source_node.node().getGeom(0).getVertexData().getNumRows()
 
-    _format = GeomVertexFormat.getV3t2()
+    _format = GeomVertexFormat.getV3n3c4()
     vertex_data = GeomVertexData('pc', _format, Geom.UH_static)
     vertex = GeomVertexWriter(vertex_data, 'vertex')
     s_vertex = GeomVertexReader(source_node.node().getGeom(0).getVertexData(), 'vertex')
     while not s_vertex.isAtEnd():
         vertex.addData3(s_vertex.getData3())
+    normal = GeomVertexWriter(vertex_data, 'normal')
+    s_normal = GeomVertexReader(source_node.node().getGeom(0).getVertexData(), 'normal')
+    while not s_normal.isAtEnd():
+        normal.addData3(s_normal.getData3())
 
     prim = GeomPoints(Geom.UH_static)
     prim.add_next_vertices(numOfVertex)
@@ -90,8 +94,8 @@ def geom_node_to_pcd(geom_node):
 
     s_normal = GeomVertexReader(geom_node.node().getGeom(0).getVertexData(), 'normal')
     while not s_normal.isAtEnd():
-        vertex = s_normal.getData3()
-        pcd.normals.append(vertex)
+        normal = s_normal.getData3()
+        pcd.normals.append(normal)
 
     return pcd
 
