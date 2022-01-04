@@ -56,6 +56,9 @@ class App(ShowBase):
         view_menu.add_checkbutton(label="Source Mesh", command=self.switch_mesh)
         view_menu.add_checkbutton(label="Source Point Cloud", command=self.switch_source_pc)
         view_menu.add_checkbutton(label="Filtered Point Cloud", command=self.switch_source_processed_pc)
+        registration_menu = tkinter.Menu(menu_bar, tearoff=0)
+        menu_bar.add_cascade(label="Registration", menu=registration_menu)
+        registration_menu.add_command(label="set source transform", command=self.set_source_transform)
 
         frame.config(menu=menu_bar)
         frame.update()
@@ -276,6 +279,12 @@ class App(ShowBase):
             node.show()
         else:
             node.hide()
+
+    def set_source_transform(self):
+        input = tkinter.simpledialog.askstring("Input Dialog", "Transform Matrix", parent=self.tkRoot)
+        f_list = str(input).split(' ')
+        f_list = list(map(float, f_list))
+        self.source_parent_node.setMat(util.array_to_mat4(f_list))
 
     def init_transform(self):
         self.source_parent_node.setMat(LMatrix4f.identMat())
