@@ -53,12 +53,11 @@ class App(ShowBase):
         file_menu.add_command(label="Change Target", command=self.change_target)
         view_menu = tkinter.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="View", menu=view_menu)
-        view_menu.add_command(label="Source Mesh", command=self.switch_mesh)
-        view_menu.add_command(label="Source Point Cloud", command=self.switch_source_pc)
-        view_menu.add_command(label="Filtered Point Cloud", command=self.switch_source_processed_pc)
+        view_menu.add_checkbutton(label="Source Mesh", command=self.switch_mesh)
+        view_menu.add_checkbutton(label="Source Point Cloud", command=self.switch_source_pc)
+        view_menu.add_checkbutton(label="Filtered Point Cloud", command=self.switch_source_processed_pc)
 
         frame.config(menu=menu_bar)
-
         frame.update()
 
         frame_id = frame.winfo_id()
