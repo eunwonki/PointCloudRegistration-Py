@@ -318,9 +318,9 @@ class App(ShowBase):
         self.source_parent_node.setMat(util.numpy_array_to_mat4(result.transformation))
 
     def local_registration(self):
-        result = util.local_registration(self.source_processed_pc_node, self.target_processed_pc_node,
+        result = util.local_registration(self.source_pc_node, self.target_pc_node,
                                          util.numpy_array_to_mat4(self.source_parent_node.getMat()), self.voxel_size)
-        self.source_parent_node.setMat(util.numpy_array_to_mat4(result.transformation))
+        self.source_parent_node.setMat(util.numpy_array_to_mat4(result))
 
     # Functions for camera zoom
     def zoom_out(self):

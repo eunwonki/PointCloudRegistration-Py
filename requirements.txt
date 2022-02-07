@@ -3,3 +3,4 @@ panda3d~=1.10.10
 numpy==1.22.0
 open3d~=0.14.1
 Pmw~=2.0.1
+opencv-contrib-python~=4.5.5

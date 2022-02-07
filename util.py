@@ -3,7 +3,8 @@ import numpy as np
 import time
 from panda3d.core import *
 
-import o3dmodule
+import localregistration
+import globalregistration
 
 def array_to_mat4(a):
     return LMatrix4f(
@@ -33,7 +34,7 @@ def mat4_to_numpy_array(a):
 
 def process(source_node, voxel_size):
     pcd = geom_node_to_pcd(source_node)
-    downsampled_pcd = o3dmodule.down_sampling(pcd, voxel_size)
+    downsampled_pcd = down_sampling(pcd, voxel_size)
     return pcd_to_geom_node(downsampled_pcd)
 
 
@@ -41,18 +42,18 @@ def global_registration(source_node, target_node, voxel_size, fast):
     source_pcd = geom_node_to_pcd(source_node)
     target_pcd = geom_node_to_pcd(target_node)
     start = time.time()
-    result = o3dmodule.global_registration_ransac_based_on_fpfh(source_pcd, target_pcd, voxel_size, fast)
+    result = globalregistration.ransac_based_on_fpfh(source_pcd, target_pcd, voxel_size, fast)
     print("Cost Time: %.3f sec" % (time.time() - start))
     return result
 
 
 def local_registration(source_node, target_node, initial_transformation, voxel_size):
-    source_pcd = geom_node_to_pcd(source_node)
-    target_pcd = geom_node_to_pcd(target_node)
     start = time.time()
-    result = o3dmodule.local_registration_gicp(source_pcd, target_pcd, initial_transformation, voxel_size)
+    #pose = localregistration.opencv_icp(source_node, target_node, initial_transformation)
+    #pose = localregistration.open3d_icp(source_node, target_node, initial_transformation, voxel_size)
+    pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
     print("Cost Time: %.3f sec" % (time.time() - start))
-    return result
+    return pose
 
 
 def mesh_node_to_point_cloud_node(source_node):
@@ -83,8 +84,6 @@ def mesh_node_to_point_cloud_node(source_node):
 
 def geom_node_to_pcd(geom_node):
     pcd = o3d.geometry.PointCloud()
-
-    numOfVertex = geom_node.node().getGeom(0).getVertexData().getNumRows()
 
     _format = GeomVertexFormat.getV3t2()
     s_vertex = GeomVertexReader(geom_node.node().getGeom(0).getVertexData(), 'vertex')
@@ -124,3 +123,67 @@ def pcd_to_geom_node(pcd):
     node.addGeom(geom)
     node = NodePath(node)
     return node
+
+
+def geom_node_to_numpy_pc(geom_node):
+    array = [[], []]
+    vertices = []
+
+    _format = GeomVertexFormat.getV3t2()
+    s_vertex = GeomVertexReader(geom_node.node().getGeom(0).getVertexData(), 'vertex')
+    while not s_vertex.isAtEnd():
+        vertex = s_vertex.getData3()
+        array[0].append(vertex)
+
+    s_normal = GeomVertexReader(geom_node.node().getGeom(0).getVertexData(), 'normal')
+    while not s_normal.isAtEnd():
+        normal = s_normal.getData3()
+        array[1].append(normal)
+
+    component_count = 6
+    if len(array[1]) == 0:
+        vertices = array[0]
+        component_count = 3
+
+    else:
+        for i in range(len(array[0])):
+            vertex = array[0][i]
+            normal = array[1][i]
+            vertices.append([vertex[0], vertex[1], vertex[2], normal[0], normal[1], normal[2]])
+
+    return np.array(vertices).reshape((-1, component_count)).astype(np.float32)
+
+
+def apply_transformation(transform, pc):
+    have_normal = (len(pc[0]) == 6)
+
+    new = []
+
+    for point in pc:
+        p = np.matmul(transform, [point[0], point[1], point[2], 1])[0:3]
+        if have_normal:
+            n = np.matmul(transform, [point[3], point[4], point[5], 1])[0:3]
+            new.append([p[0], p[1], p[2], n[0], n[1], n[2]])
+        else:
+            new.append(p)
+
+    return np.array(new).reshape((-1, len(pc[0]))).astype(np.float32)
+
+def read_pointcloud(filename):
+    return o3d.io.read_point_cloud(filename)
+
+
+def read_mesh_to_pointcloud(filename):
+    mesh = o3d.io.read_triangle_mesh(filename)
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = mesh.vertices
+    return pcd
+
+
+def down_sampling(pcd, voxel_size):
+    print(":: Downsample with a voxel size %.3f." % voxel_size)
+    pcd_down = pcd.voxel_down_sample(voxel_size)
+    radius_normal = voxel_size * 2
+    print(":: Estimate normal with search radius %.3f." % radius_normal)
+    pcd_down.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+    return pcd_down
