@@ -169,19 +169,22 @@ class App(ShowBase):
         self.target_mesh_node = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
         self.target_mesh_node.setColorScale(0.5, 1, 0.5, 1)
         self.target_mesh_node.reparentTo(self.target_parent_node)
-        self.source_mesh_node.show()  # set to default hidden setting (synchronize between source and target)
+        if self.source_mesh_node is not None:
+            self.source_mesh_node.show()  # set to default hidden setting (synchronize between source and target)
 
         if self.target_pc_node is not None:
             self.target_pc_node.removeNode()
         self.target_pc_node = util.mesh_node_to_point_cloud_node(self.target_mesh_node)
         self.target_pc_node.reparentTo(self.target_parent_node)
-        self.source_pc_node.show()
+        if self.source_pc_node is not None:
+            self.source_pc_node.show()
 
         if self.target_processed_pc_node is not None:
             self.target_processed_pc_node.removeNode()
         self.target_processed_pc_node = util.process(self.target_pc_node, self.voxel_size)
         self.target_processed_pc_node.reparentTo(self.target_parent_node)
-        self.source_processed_pc_node.show()
+        if self.source_processed_pc_node is not None:
+            self.source_processed_pc_node.show()
 
         self.target_path_label["text"] = filepath
 
@@ -318,7 +321,7 @@ class App(ShowBase):
         self.source_parent_node.setMat(util.numpy_array_to_mat4(result.transformation))
 
     def local_registration(self):
-        result = util.local_registration(self.source_pc_node, self.target_pc_node,
+        result = util.local_registration(self.source_processed_pc_node, self.target_processed_pc_node,
                                          util.numpy_array_to_mat4(self.source_parent_node.getMat()), self.voxel_size)
         self.source_parent_node.setMat(util.numpy_array_to_mat4(result))
 

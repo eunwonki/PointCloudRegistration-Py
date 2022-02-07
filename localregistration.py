@@ -37,7 +37,6 @@ def open3d_gicp(source_node, target_node, initial_transformation, voxel_size):
 
 def opencv_icp(source_node, target_node, initial_transformation):
     source_pc = util.geom_node_to_numpy_pc(source_node)
-    source_pc = util.apply_transformation(initial_transformation, source_pc)
     target_pc = util.geom_node_to_numpy_pc(target_node)
 
     iterations: int = 100
@@ -50,12 +49,17 @@ def opencv_icp(source_node, target_node, initial_transformation):
     icp = cv.ppf_match_3d_ICP(iterations=iterations
                               , tolerence=tolerence
                               , rejectionScale=rejectionScale
-                              , numLevels=numLevels)
+                              , numLevels=numLevels
+                              , sampleType=0
+                              , numMaxCorr=1)
 
-    retval, residual, pose = icp.registerModelToScene(source_pc, target_pc)
-    print("   residual: %.6f." % residual)
+    pose3d = cv.ppf_match_3d_Pose3D()
+    pose3d.updatePose(np.array(initial_transformation))
 
-    if residual > 1.0:
+    retval, poses = icp.registerModelToScene(source_pc, target_pc, [pose3d])
+    print("   residual: %.6f." % poses[0].residual)
+
+    if poses[0].residual > 1.0:
         return np.eye(4)
 
-    return np.matmul(pose, initial_transformation)
+    return poses[0].pose

@@ -141,33 +141,19 @@ def geom_node_to_numpy_pc(geom_node):
         array[1].append(normal)
 
     component_count = 6
-    if len(array[1]) == 0:
-        vertices = array[0]
-        component_count = 3
-
-    else:
-        for i in range(len(array[0])):
+    has_normal = len(array[1]) > 0
+    if has_normal:
+        for i in range(len(array[1])):
             vertex = array[0][i]
             normal = array[1][i]
             vertices.append([vertex[0], vertex[1], vertex[2], normal[0], normal[1], normal[2]])
 
+    else:
+        component_count = 3
+        vertices = array[0]
+
     return np.array(vertices).reshape((-1, component_count)).astype(np.float32)
 
-
-def apply_transformation(transform, pc):
-    have_normal = (len(pc[0]) == 6)
-
-    new = []
-
-    for point in pc:
-        p = np.matmul(transform, [point[0], point[1], point[2], 1])[0:3]
-        if have_normal:
-            n = np.matmul(transform, [point[3], point[4], point[5], 1])[0:3]
-            new.append([p[0], p[1], p[2], n[0], n[1], n[2]])
-        else:
-            new.append(p)
-
-    return np.array(new).reshape((-1, len(pc[0]))).astype(np.float32)
 
 def read_pointcloud(filename):
     return o3d.io.read_point_cloud(filename)
