@@ -53,9 +53,13 @@ class App(ShowBase):
         file_menu.add_command(label="Change Target", command=self.change_target)
         view_menu = tkinter.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="View", menu=view_menu)
-        view_menu.add_checkbutton(label="Source Mesh", command=self.switch_mesh)
-        view_menu.add_checkbutton(label="Source Point Cloud", command=self.switch_source_pc)
-        view_menu.add_checkbutton(label="Filtered Point Cloud", command=self.switch_source_processed_pc)
+        self.mesh_view_var = tkinter.IntVar(value=1)
+        view_menu.add_checkbutton(label="Source Mesh", command=self.switch_mesh, variable=self.mesh_view_var)
+        self.pc_view_var = tkinter.IntVar(value=1)
+        view_menu.add_checkbutton(label="Source Point Cloud", command=self.switch_source_pc, variable=self.pc_view_var)
+        self.filtered_pc_view_var = tkinter.IntVar(value=1)
+        view_menu.add_checkbutton(label="Filtered Point Cloud", command=self.switch_source_processed_pc
+                                  , variable=self.filtered_pc_view_var)
         registration_menu = tkinter.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Registration", menu=registration_menu)
         registration_menu.add_command(label="set source transform", command=self.set_source_transform)
@@ -129,20 +133,31 @@ class App(ShowBase):
         self.source_mesh_node = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
         self.source_mesh_node.setColorScale(1, 0.5, 0.5, 1)
         self.source_mesh_node.reparentTo(self.source_parent_node)
+        # set to default hidden setting (synchronize between source and target)
+        if self.target_mesh_node is not None:
+            self.target_mesh_node.show()
 
         if self.source_pc_node is not None:
             self.source_pc_node.removeNode()
         self.source_pc_node = util.mesh_node_to_point_cloud_node(self.source_mesh_node)
         self.source_pc_node.reparentTo(self.source_parent_node)
+        if self.target_pc_node is not None:
+            self.target_pc_node.show()
 
         if self.source_processed_pc_node is not None:
             self.source_processed_pc_node.removeNode()
         self.source_processed_pc_node = util.process(self.source_pc_node, self.voxel_size)
         self.source_processed_pc_node.reparentTo(self.source_parent_node)
+        if self.target_processed_pc_node is not None:
+            self.target_processed_pc_node.show()
 
         self.init_transform()
 
         self.source_path_label["text"] = filepath
+
+        self.mesh_view_var.set(1)
+        self.pc_view_var.set(1)
+        self.filtered_pc_view_var.set(1)
 
 
     def load_target(self, filepath):
@@ -154,18 +169,25 @@ class App(ShowBase):
         self.target_mesh_node = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
         self.target_mesh_node.setColorScale(0.5, 1, 0.5, 1)
         self.target_mesh_node.reparentTo(self.target_parent_node)
+        self.source_mesh_node.show()  # set to default hidden setting (synchronize between source and target)
 
         if self.target_pc_node is not None:
             self.target_pc_node.removeNode()
         self.target_pc_node = util.mesh_node_to_point_cloud_node(self.target_mesh_node)
         self.target_pc_node.reparentTo(self.target_parent_node)
+        self.source_pc_node.show()
 
         if self.target_processed_pc_node is not None:
             self.target_processed_pc_node.removeNode()
         self.target_processed_pc_node = util.process(self.target_pc_node, self.voxel_size)
         self.target_processed_pc_node.reparentTo(self.target_parent_node)
+        self.source_processed_pc_node.show()
 
         self.target_path_label["text"] = filepath
+
+        self.mesh_view_var.set(1)
+        self.pc_view_var.set(1)
+        self.filtered_pc_view_var.set(1)
 
 
     def defaultLens(self):
@@ -273,6 +295,7 @@ class App(ShowBase):
     def switch_source_processed_pc(self):
         self.switch_node(self.source_processed_pc_node)
         self.switch_node(self.target_processed_pc_node)
+
 
     def switch_node(self, node):
         if node.isHidden():
