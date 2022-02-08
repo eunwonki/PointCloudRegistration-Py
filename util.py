@@ -71,6 +71,10 @@ def mesh_node_to_point_cloud_node(source_node):
     s_normal = GeomVertexReader(source_node.node().getGeom(0).getVertexData(), 'normal')
     while not s_normal.isAtEnd():
         normal.addData3(s_normal.getData3())
+    color = GeomVertexWriter(vertex_data, 'color')
+    s_color = GeomVertexReader(source_node.node().getGeom(0).getVertexData(), 'color')
+    while not s_color.isAtEnd():
+        color.addData3(s_color.getData3())
 
     prim = GeomPoints(Geom.UH_static)
     prim.add_next_vertices(numOfVertex)
@@ -98,6 +102,11 @@ def geom_node_to_pcd(geom_node):
         normal = s_normal.getData3()
         pcd.normals.append(normal)
 
+    s_color = GeomVertexReader(geom_node.node().getGeom(0).getVertexData(), 'color')
+    while not s_color.isAtEnd():
+        color = s_color.getData3()
+        pcd.colors.append(color)
+
     return pcd
 
 
@@ -110,11 +119,14 @@ def pcd_to_geom_node(pcd):
 
     vertex = GeomVertexWriter(vertex_data, 'vertex')
     normal = GeomVertexWriter(vertex_data, 'normal')
+    color = GeomVertexWriter(vertex_data, 'color')
 
     for point in pcd.points:
         vertex.addData3(point[0], point[1], point[2])
     for point_normal in pcd.normals:
         normal.addData3(point_normal[0], point_normal[1], point_normal[2])
+    for point_color in pcd.colors:
+        color.addData3(point_color[0], point_color[1], point_color[2])
 
     prim = GeomPoints(Geom.UH_static)
     prim.add_next_vertices(num_of_vertex)
