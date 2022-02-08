@@ -53,7 +53,8 @@ def local_registration(source_node, target_node, initial_transformation, voxel_s
     start = time.time()
     #pose = localregistration.opencv_icp(source_node, target_node, initial_transformation)
     #pose = localregistration.open3d_icp(source_node, target_node, initial_transformation, voxel_size)
-    pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
+    #pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
+    pose = localregistration.colored_icp(source_node, target_node, initial_transformation, voxel_size)
     print("Cost Time: %.3f sec" % (time.time() - start))
     return pose
 
