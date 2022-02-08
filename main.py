@@ -85,12 +85,16 @@ class App(ShowBase):
         self.setLight()
         self.setDisplayRegion()
 
-        # Models
+        # Parameters
         self.voxel_size = 0.005
+
+        self.setCamera()
 
         self.load_source(default_source_path)
         self.load_target(default_target_path)
 
+
+    def setCamera(self):
         """ Define camera parameters """
         lens = self.defaultLens()
         # Camera step for changes
@@ -102,7 +106,6 @@ class App(ShowBase):
         self.cam.setLens(lens)
         self.camera = self.render.attachNewNode(self.cam)
         self.camPivot = self.render.attachNewNode("cam_pivot")
-        self.camPivot.setPos(self.target_pc_node.getBounds().getCenter())
         self.camera.reparent_to(self.camPivot)
         self.camera.set_y(-2)
 
@@ -178,6 +181,7 @@ class App(ShowBase):
         self.target_pc_node.reparentTo(self.target_parent_node)
         if self.source_pc_node is not None:
             self.source_pc_node.show()
+        self.camPivot.setPos(self.target_pc_node.getBounds().getCenter())
 
         if self.target_processed_pc_node is not None:
             self.target_processed_pc_node.removeNode()
@@ -277,12 +281,14 @@ class App(ShowBase):
     def change_source(self):
         file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file",
                                                   filetypes=(("Wavefront files", "*.obj"),
+                                                             ("Point Cloud files", "*.ply"),
                                                              ("all files", "*.*")))
         self.load_source(file)
 
     def change_target(self):
         file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file",
                                                   filetypes=(("Wavefront files", "*.obj"),
+                                                             ("Point Cloud files", "*.ply"),
                                                              ("all files", "*.*")))
         self.load_target(file)
 

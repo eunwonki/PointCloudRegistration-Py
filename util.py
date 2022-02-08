@@ -6,6 +6,7 @@ from panda3d.core import *
 import localregistration
 import globalregistration
 
+
 def array_to_mat4(a):
     return LMatrix4f(
         a[0], a[4], a[8], a[12],
@@ -13,6 +14,7 @@ def array_to_mat4(a):
         a[2], a[6], a[10], a[14],
         a[3], a[7], a[11], a[15],
     )
+
 
 def numpy_array_to_mat4(a):
     return LMatrix4f(
