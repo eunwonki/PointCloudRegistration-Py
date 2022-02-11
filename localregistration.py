@@ -64,6 +64,7 @@ def opencv_icp(source_node, target_node, initial_transformation):
 
     return poses[0].pose
 
+
 def colored_icp(source_node, target_node, initial_transformation, voxel_size):
     source_pcd = util.geom_node_to_pcd(source_node)
     target_pcd = util.geom_node_to_pcd(target_node)

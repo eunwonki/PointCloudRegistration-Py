@@ -8,8 +8,8 @@ import util
 
 from direct.showbase.ShowBase import ShowBase
 
-default_source_path = "data/ColoredICP/frag_115.ply"
-default_target_path = "data/ColoredICP/frag_116.ply"
+default_source_path = "data/model.obj"
+default_target_path = "data/scene.obj"
 
 
 class App(ShowBase):
@@ -86,7 +86,7 @@ class App(ShowBase):
         self.setDisplayRegion()
 
         # Parameters
-        self.voxel_size = 0.04
+        self.voxel_size = 0.005
 
         self.setCamera()
 
@@ -323,8 +323,9 @@ class App(ShowBase):
 
     def global_registration(self):
         fast = False
-        result = util.global_registration(self.source_processed_pc_node, self.target_processed_pc_node, self.voxel_size, fast)
-        self.source_parent_node.setMat(util.numpy_array_to_mat4(result.transformation))
+        result = util.global_registration(self.source_processed_pc_node, self.target_processed_pc_node, self.voxel_size,
+                                          fast)
+        self.source_parent_node.setMat(util.numpy_array_to_mat4(result))
 
     def local_registration(self):
         result = util.local_registration(self.source_processed_pc_node, self.target_processed_pc_node,

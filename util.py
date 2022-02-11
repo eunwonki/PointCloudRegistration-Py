@@ -41,12 +41,12 @@ def process(source_node, voxel_size):
 
 
 def global_registration(source_node, target_node, voxel_size, fast):
+    start = time.time()
     source_pcd = geom_node_to_pcd(source_node)
     target_pcd = geom_node_to_pcd(target_node)
-    start = time.time()
-    result = globalregistration.ransac_based_on_fpfh(source_pcd, target_pcd, voxel_size, fast)
+    pose = globalregistration.ransac_based_on_fpfh(source_pcd, target_pcd, voxel_size, fast)
     print("Cost Time: %.3f sec" % (time.time() - start))
-    return result
+    return pose
 
 
 def local_registration(source_node, target_node, initial_transformation, voxel_size):

@@ -15,7 +15,7 @@ def ransac_based_on_fpfh(source, target, voxel_size, fast):
     print(":: RANSAC registration on downsampled point clouds.")
     print("   Since the downsampling voxel size is %.3f," % voxel_size)
     print("   we use a liberal distance threshold %.3f." % distance_threshold)
-    print("   option fast %d" % fast)
+    print("   option fast: %d" % fast)
 
     if not fast:
         result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
@@ -33,4 +33,5 @@ def ransac_based_on_fpfh(source, target, voxel_size, fast):
             source, target, fpfh(source, voxel_size), fpfh(target, voxel_size),
             o3d.pipelines.registration.FastGlobalRegistrationOption(
                 maximum_correspondence_distance=distance_threshold))
-    return result
+    print(result)
+    return result.transformation
