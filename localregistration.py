@@ -75,7 +75,9 @@ def colored_icp(source_node, target_node, initial_transformation, voxel_size):
 
     result = o3d.pipelines.registration.registration_colored_icp(
         source_pcd, target_pcd, voxel_size, initial_transformation,
-        o3d.pipelines.registration.TransformationEstimationForColoredICP(),
+        o3d.pipelines.registration.TransformationEstimationForColoredICP(
+            lambda_geometric=0.8   # default: 0.968000
+        ),
         o3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-6,
                                                           relative_rmse=1e-6,
                                                           max_iteration=50))
