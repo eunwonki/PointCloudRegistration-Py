@@ -82,8 +82,8 @@ class App(ShowBase):
 
         '''set panda3d scene'''
 
-        self.setLight()
-        self.setDisplayRegion()
+        self.set_light()
+        self.set_display_region()
 
         # Parameters
         self.voxel_size = 0.005
@@ -96,7 +96,7 @@ class App(ShowBase):
 
     def setCamera(self):
         """ Define camera parameters """
-        lens = self.defaultLens()
+        lens = self.default_lens()
         # Camera step for changes
         self.camSpeed = .05
         self.camZoomStep = 1
@@ -197,7 +197,7 @@ class App(ShowBase):
         self.filtered_pc_view_var.set(1)
 
 
-    def defaultLens(self):
+    def default_lens(self):
         # Camera angles
         lens = PerspectiveLens()
         camHorAng = 40
@@ -214,12 +214,12 @@ class App(ShowBase):
 
 
 
-    def setLight(self):
+    def set_light(self):
         light = PointLight('Light')
         light.set_color((1, 1, 1, 1))
         light = self.render.attachNewNode(light)
         light.reparentTo(self.render)
-        light.setPos(0, 0, 0)
+        light.setPos(-1, -1, -1)
         self.render.setLight(light)
 
         light = PointLight('Light')
@@ -229,7 +229,22 @@ class App(ShowBase):
         light.setPos(1, 1, 1)
         self.render.setLight(light)
 
-    def setDisplayRegion(self):
+        light = PointLight('Light')
+        light.set_color((1, 1, 1, 1))
+        light = self.render.attachNewNode(light)
+        light.reparentTo(self.render)
+        light.setPos(1, -1, 1)
+        self.render.setLight(light)
+
+        light = PointLight('Light')
+        light.set_color((1, 1, 1, 1))
+        light = self.render.attachNewNode(light)
+        light.reparentTo(self.render)
+        light.setPos(1, 1, -1)
+        self.render.setLight(light)
+
+
+    def set_display_region(self):
         # Disable the default DisplayRegion, which covers the whole screen.
         dr = self.camNode.getDisplayRegion(0)
         dr.setActive(0)
@@ -279,17 +294,19 @@ class App(ShowBase):
         DirectButton(text=["local registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,-0.2), command=self.local_registration)
 
     def change_source(self):
-        file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file",
-                                                  filetypes=(("Wavefront files", "*.obj"),
-                                                             ("Point Cloud files", "*.ply"),
-                                                             ("all files", "*.*")))
+        file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file")
+
+        if file == '':
+            return
+
         self.load_source(file)
 
     def change_target(self):
-        file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file",
-                                                  filetypes=(("Wavefront files", "*.obj"),
-                                                             ("Point Cloud files", "*.ply"),
-                                                             ("all files", "*.*")))
+        file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file")
+
+        if file == '':
+            return
+
         self.load_target(file)
 
 
@@ -314,8 +331,17 @@ class App(ShowBase):
 
     def set_source_transform(self):
         input = tkinter.simpledialog.askstring("Input Dialog", "Transform Matrix", parent=self.tkRoot)
+
+        if input is None:
+            return
+
         f_list = str(input).split(' ')
         f_list = list(map(float, f_list))
+
+        if len(f_list) != 16:
+            print("size of transform matrix should be 16")
+            return
+
         self.source_parent_node.setMat(util.array_to_mat4(f_list))
 
     def init_transform(self):
