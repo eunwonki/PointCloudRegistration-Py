@@ -9,8 +9,8 @@ import util
 from direct.showbase.ShowBase import ShowBase
 
 
-default_source_path = "data/ColoredICP/skin_classic_left.ply"
-default_target_path = "data/ColoredICP/scene.ply"
+default_source_path = "data/ColoredICP/skin_classic_left_red.ply"
+default_target_path = "data/ColoredICP/scene_blue.ply"
 
 
 class App(ShowBase):
