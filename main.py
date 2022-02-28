@@ -136,6 +136,8 @@ class App(ShowBase):
             self.source_mesh_node.removeNode()
         self.source_mesh_node = self.loader.loadModel(filepath).findAllMatches('**/+GeomNode')[0]
         self.source_mesh_node.setColorScale(1, 0.5, 0.5, 1)
+        self.source_mesh_node.setTransparency(TransparencyAttrib.MAlpha)
+        self.source_mesh_node.setAlphaScale(0.5)
         self.source_mesh_node.reparentTo(self.source_parent_node)
         # set to default hidden setting (synchronize between source and target)
         if self.target_mesh_node is not None:

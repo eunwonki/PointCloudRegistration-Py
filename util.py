@@ -53,7 +53,7 @@ def local_registration(source_node, target_node, initial_transformation, voxel_s
     start = time.time()
     #pose = localregistration.opencv_icp(source_node, target_node, initial_transformation)
     #pose = localregistration.open3d_icp(source_node, target_node, initial_transformation, voxel_size)
-    #pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
+    # pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
     pose = localregistration.colored_icp(source_node, target_node, initial_transformation, voxel_size)
     print("Cost Time: %.3f sec" % (time.time() - start))
     return pose
@@ -188,3 +188,11 @@ def down_sampling(pcd, voxel_size):
     print(":: Estimate normal with search radius %.3f." % radius_normal)
     pcd_down.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
     return pcd_down
+
+
+def print_matrix(matrix):
+    text = ''
+    matrix = np.reshape(matrix, 16)
+    for e in matrix:
+        text += str(e) + ' '
+    print(text)
