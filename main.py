@@ -9,8 +9,9 @@ import util
 from direct.showbase.ShowBase import ShowBase
 
 
-default_source_path = "data/ColoredICP/skin_classic_left_red.ply"
-default_target_path = "data/ColoredICP/scene_blue.ply"
+default_source_path = "data/model.obj"
+default_target_path = "data/scene.obj"
+voxel_size = 0.005  # sampling 단위
 
 
 class App(ShowBase):
@@ -83,35 +84,33 @@ class App(ShowBase):
 
         '''set panda3d scene'''
 
-        self.set_light()
-        self.set_display_region()
+        self.__set_light()
+        self.__set_display_region()
 
-        # Parameters
-        self.voxel_size = 0.005
 
-        self.setCamera()
+        self.__set_camera()
 
         self.load_source(default_source_path)
         self.load_target(default_target_path)
 
 
-    def setCamera(self):
+    def __set_camera(self):
         """ Define camera parameters """
-        lens = self.default_lens()
+        lens = self.__get_default_lens()
         # Camera step for changes
-        self.camSpeed = .05
-        self.camZoomStep = 1
+        self.cam_speed = .05
+        self.cam_zoom_step = 1
 
         # Camera
         self.cam = Camera("cam5")
         self.cam.setLens(lens)
         self.camera = self.render.attachNewNode(self.cam)
-        self.camPivot = self.render.attachNewNode("cam_pivot")
-        self.camera.reparent_to(self.camPivot)
+        self.cam_pivot = self.render.attachNewNode("cam_pivot")
+        self.camera.reparent_to(self.cam_pivot)
         self.camera.set_y(-2)
 
         # Setup each camera.
-        self.registration_view.setCamera(self.camera)
+        self.registration_view.set_camera(self.camera)
 
         """Disable the mouse and set up mouse-view functions"""
         self.disableMouse()
@@ -127,6 +126,107 @@ class App(ShowBase):
         self.wheel_pressed = False
         self.taskMgr.add(self.rotate_view, 'Rotate Camera View', extraArgs=[], appendTask=True)
 
+
+    @staticmethod
+    def __get_default_lens():
+        # Camera angles
+        lens = PerspectiveLens()
+        camHorAng = 40
+        camVerAng = 30
+        lens.setFov(camHorAng, camVerAng)
+
+        # Near/Far plane
+        camNear = 0.01
+        lens.setNear(camNear)
+        camFar = 5
+        lens.setFar(camFar)
+
+        return lens
+
+
+    def __set_light(self):
+        light = PointLight('Light')
+        light.set_color((1, 1, 1, 1))
+        light = self.render.attachNewNode(light)
+        light.reparentTo(self.render)
+        light.setPos(-1, -1, -1)
+        self.render.setLight(light)
+
+        light = PointLight('Light')
+        light.set_color((1, 1, 1, 1))
+        light = self.render.attachNewNode(light)
+        light.reparentTo(self.render)
+        light.setPos(1, 1, 1)
+        self.render.setLight(light)
+
+        light = PointLight('Light')
+        light.set_color((1, 1, 1, 1))
+        light = self.render.attachNewNode(light)
+        light.reparentTo(self.render)
+        light.setPos(1, -1, 1)
+        self.render.setLight(light)
+
+        light = PointLight('Light')
+        light.set_color((1, 1, 1, 1))
+        light = self.render.attachNewNode(light)
+        light.reparentTo(self.render)
+        light.setPos(1, 1, -1)
+        self.render.setLight(light)
+
+
+    def __set_display_region(self):
+        # Disable the default DisplayRegion, which covers the whole screen.
+        dr = self.camNode.getDisplayRegion(0)
+        dr.setActive(0)
+
+        # Now, make a new pair of side-by-side DisplayRegions.
+        window = dr.getWindow()
+
+        self.registration_view = window.makeDisplayRegion(0, 3 / 4, 0, 1)
+        self.registration_view.setSort(dr.getSort())
+        self.registration_view.setClearColorActive(True)
+        self.registration_view.setClearColor((0.4, 0.4, 0.4, 0.4))
+
+        self.ui_view = window.makeDisplayRegion(3 / 4, 1, 0, 1)
+        self.ui_view.setSort(dr.getSort())
+        self.ui_view.setClearColorActive(True)
+        self.ui_view.setClearColor((0.5, 0.5, 0, 1))
+
+        camera2d = NodePath(Camera('cam2d'))
+        lens = OrthographicLens()
+        lens.setFilmSize(2, 2)
+        lens.setNearFar(-1000, 1000)
+        camera2d.node().setLens(lens)
+
+        render2d = NodePath('render2d')
+        render2d.setDepthTest(False)
+        render2d.setDepthWrite(False)
+        camera2d.reparentTo(render2d)
+        self.ui_view.set_camera(camera2d)
+
+        aspect2d = render2d.attachNewNode(PGTop('aspect2d'))
+        mw_node = MouseWatcher("mouse_watcher")
+        mw_node.set_display_region(self.ui_view)
+        input_ctrl = self.mouseWatcher.parent
+        mw = input_ctrl.attach_new_node(mw_node)
+        bt_node = ButtonThrower("btn_thrower")
+        mw.attach_new_node(bt_node)
+        aspect2d.node().setMouseWatcher(mw_node)
+
+        font = self.loader.loadFont('config/arial.ttf', 0)
+        font.setPointSize(10)
+
+        self.source_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1,
+                                             parent=aspect2d, frameSize=(-1, 1, -.2, .1), pos=(0, 0, 0.9))
+        self.target_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1,
+                                             parent=aspect2d, frameSize=(-1, 1, -.2, .1), pos=(0, 0, 0.55))
+
+        DirectButton(text=["init"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1,
+                     pos=(0, 0, 0.2), command=self.init_transform)
+        DirectButton(text=["global registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1),
+                     text_scale=0.1, pos=(0, 0, 0), command=self.global_registration)
+        DirectButton(text=["local registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1),
+                     text_scale=0.1, pos=(0, 0, -0.2), command=self.local_registration)
 
     def load_source(self, filepath):
         filepath = os.path.abspath(filepath)
@@ -152,7 +252,7 @@ class App(ShowBase):
 
         if self.source_processed_pc_node is not None:
             self.source_processed_pc_node.removeNode()
-        self.source_processed_pc_node = util.process(self.source_pc_node, self.voxel_size)
+        self.source_processed_pc_node = util.process(self.source_pc_node, voxel_size)
         self.source_processed_pc_node.reparentTo(self.source_parent_node)
         if self.target_processed_pc_node is not None:
             self.target_processed_pc_node.show()
@@ -184,11 +284,11 @@ class App(ShowBase):
         self.target_pc_node.reparentTo(self.target_parent_node)
         if self.source_pc_node is not None:
             self.source_pc_node.show()
-        self.camPivot.setPos(self.target_pc_node.getBounds().getCenter())
+        self.cam_pivot.setPos(self.target_pc_node.getBounds().getCenter())
 
         if self.target_processed_pc_node is not None:
             self.target_processed_pc_node.removeNode()
-        self.target_processed_pc_node = util.process(self.target_pc_node, self.voxel_size)
+        self.target_processed_pc_node = util.process(self.target_pc_node, voxel_size)
         self.target_processed_pc_node.reparentTo(self.target_parent_node)
         if self.source_processed_pc_node is not None:
             self.source_processed_pc_node.show()
@@ -198,103 +298,6 @@ class App(ShowBase):
         self.mesh_view_var.set(1)
         self.pc_view_var.set(1)
         self.filtered_pc_view_var.set(1)
-
-
-    def default_lens(self):
-        # Camera angles
-        lens = PerspectiveLens()
-        camHorAng = 40
-        camVerAng = 30
-        lens.setFov(camHorAng, camVerAng)
-
-        # Near/Far plane
-        camNear = 0.01
-        lens.setNear(camNear)
-        camFar = 5
-        lens.setFar(camFar)
-
-        return lens
-
-
-
-    def set_light(self):
-        light = PointLight('Light')
-        light.set_color((1, 1, 1, 1))
-        light = self.render.attachNewNode(light)
-        light.reparentTo(self.render)
-        light.setPos(-1, -1, -1)
-        self.render.setLight(light)
-
-        light = PointLight('Light')
-        light.set_color((1, 1, 1, 1))
-        light = self.render.attachNewNode(light)
-        light.reparentTo(self.render)
-        light.setPos(1, 1, 1)
-        self.render.setLight(light)
-
-        light = PointLight('Light')
-        light.set_color((1, 1, 1, 1))
-        light = self.render.attachNewNode(light)
-        light.reparentTo(self.render)
-        light.setPos(1, -1, 1)
-        self.render.setLight(light)
-
-        light = PointLight('Light')
-        light.set_color((1, 1, 1, 1))
-        light = self.render.attachNewNode(light)
-        light.reparentTo(self.render)
-        light.setPos(1, 1, -1)
-        self.render.setLight(light)
-
-
-    def set_display_region(self):
-        # Disable the default DisplayRegion, which covers the whole screen.
-        dr = self.camNode.getDisplayRegion(0)
-        dr.setActive(0)
-
-        # Now, make a new pair of side-by-side DisplayRegions.
-        window = dr.getWindow()
-
-        self.registration_view = window.makeDisplayRegion(0, 3 / 4, 0, 1)
-        self.registration_view.setSort(dr.getSort())
-        self.registration_view.setClearColorActive(True)
-        self.registration_view.setClearColor((0.4, 0.4, 0.4, 0.4))
-
-        self.ui_view = window.makeDisplayRegion(3 / 4, 1, 0, 1)
-        self.ui_view.setSort(dr.getSort())
-        self.ui_view.setClearColorActive(True)
-        self.ui_view.setClearColor((0.5, 0.5, 0, 1))
-
-        camera2d = NodePath(Camera('cam2d'))
-        lens = OrthographicLens()
-        lens.setFilmSize(2, 2)
-        lens.setNearFar(-1000, 1000)
-        camera2d.node().setLens(lens)
-
-        render2d = NodePath('render2d')
-        render2d.setDepthTest(False)
-        render2d.setDepthWrite(False)
-        camera2d.reparentTo(render2d)
-        self.ui_view.setCamera(camera2d)
-
-        aspect2d = render2d.attachNewNode(PGTop('aspect2d'))
-        mw_node = MouseWatcher("mouse_watcher")
-        mw_node.set_display_region(self.ui_view)
-        input_ctrl = self.mouseWatcher.parent
-        mw = input_ctrl.attach_new_node(mw_node)
-        bt_node = ButtonThrower("btn_thrower")
-        mw.attach_new_node(bt_node)
-        aspect2d.node().setMouseWatcher(mw_node)
-
-        font = self.loader.loadFont('config/arial.ttf', 0)
-        font.setPointSize(10)
-
-        self.source_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1, parent=aspect2d, frameSize=(-1, 1, -.2, .1), pos=(0,0,0.9))
-        self.target_path_label = DirectLabel(text="", text_font=font, text_wordwrap=20, text_scale=0.1, parent=aspect2d, frameSize=(-1, 1, -.2, .1), pos=(0,0,0.55))
-
-        DirectButton(text=["init"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,0.2), command=self.init_transform)
-        DirectButton(text=["global registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,0), command=self.global_registration)
-        DirectButton(text=["local registration"], parent=aspect2d, frameSize=(-.5, .5, -.05, .1), text_scale=0.1, pos=(0,0,-0.2), command=self.local_registration)
 
     def change_source(self):
         file = tkinter.filedialog.askopenfilename(initialdir="/", title="Select file")
@@ -326,6 +329,7 @@ class App(ShowBase):
         self.switch_node(self.target_processed_pc_node)
 
 
+    @staticmethod
     def switch_node(self, node):
         if node.isHidden():
             node.show()
@@ -333,12 +337,12 @@ class App(ShowBase):
             node.hide()
 
     def set_source_transform(self):
-        input = tkinter.simpledialog.askstring("Input Dialog", "Transform Matrix", parent=self.tkRoot)
+        inputText = tkinter.simpledialog.askstring("Input Dialog", "Transform Matrix", parent=self.tkRoot)
 
-        if input is None:
+        if inputText is None:
             return
 
-        f_list = str(input).split(' ')
+        f_list = str(inputText).split(' ')
         f_list = list(map(float, f_list))
 
         if len(f_list) != 16:
@@ -351,27 +355,24 @@ class App(ShowBase):
         self.source_parent_node.setMat(LMatrix4f.identMat())
 
     def global_registration(self):
-        fast = False
-        result = util.global_registration(self.source_processed_pc_node, self.target_processed_pc_node, self.voxel_size,
-                                          fast)
+        result = util.global_registration(self.source_processed_pc_node, self.target_processed_pc_node, voxel_size)
         self.source_parent_node.setMat(util.numpy_array_to_mat4(result))
 
     def local_registration(self):
         result = util.local_registration(self.source_processed_pc_node, self.target_processed_pc_node,
-                                         util.numpy_array_to_mat4(self.source_parent_node.getMat()), self.voxel_size)
+                                         util.numpy_array_to_mat4(self.source_parent_node.getMat()), voxel_size)
         self.source_parent_node.setMat(util.numpy_array_to_mat4(result))
 
     # Functions for camera zoom
     def zoom_out(self):
         """Translate the camera along the y axis of its matrix to zoom out the view"""
         self.view_changed = True
-        self.camera.setPos(self.camera.getMat().xform((0, -self.camZoomStep, 0, 1)).getXyz())
+        self.camera.setPos(self.camera.getMat().xform((0, -self.cam_zoom_step, 0, 1)).getXyz())
 
     def zoom_in(self):
         """Translate the camera along the y axis its matrix to zoom in the view"""
         self.view_changed = True
-        camPos = self.camera.getPos()
-        newCamPos = self.camera.getMat().xform((0, self.camZoomStep, 0, 1)).getXyz()
+        newCamPos = self.camera.getMat().xform((0, self.cam_zoom_step, 0, 1)).getXyz()
         self.camera.setPos(newCamPos)
 
     # Functions for camera rotation
@@ -390,7 +391,7 @@ class App(ShowBase):
                 self.lastMousePos = Point2(mouse_pos)
             else:
                 d_heading, d_pitch = (mouse_pos - self.lastMousePos) * 100.
-                pivot = self.camPivot
+                pivot = self.cam_pivot
                 pivot.set_hpr(pivot.get_h() - d_heading, pivot.get_p() + d_pitch, 0.)
                 self.view_changed = True
                 self.lastMousePos = Point2(mouse_pos)

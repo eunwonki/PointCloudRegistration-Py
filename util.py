@@ -4,6 +4,7 @@ import time
 from panda3d.core import *
 
 import localregistration
+from localregistration import Method
 import globalregistration
 
 
@@ -36,11 +37,15 @@ def mat4_to_numpy_array(a):
 
 def process(source_node, voxel_size):
     pcd = geom_node_to_pcd(source_node)
-    downsampled_pcd = down_sampling(pcd, voxel_size)
-    return pcd_to_geom_node(downsampled_pcd)
+    down_sampled_pcd = down_sampling(pcd, voxel_size)
+    return pcd_to_geom_node(down_sampled_pcd)
 
 
-def global_registration(source_node, target_node, voxel_size, fast):
+def global_registration(source_node, target_node, voxel_size):
+    # parameters...
+    fast = False
+    ######################
+
     start = time.time()
     source_pcd = geom_node_to_pcd(source_node)
     target_pcd = geom_node_to_pcd(target_node)
@@ -50,11 +55,19 @@ def global_registration(source_node, target_node, voxel_size, fast):
 
 
 def local_registration(source_node, target_node, initial_transformation, voxel_size):
+    # parameters...
+    method = Method.OPEN3D_GREATEST
+    ######################
+
     start = time.time()
-    #pose = localregistration.opencv_icp(source_node, target_node, initial_transformation)
-    #pose = localregistration.open3d_icp(source_node, target_node, initial_transformation, voxel_size)
-    # pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
-    pose = localregistration.colored_icp(source_node, target_node, initial_transformation, voxel_size)
+    if method == Method.OPENCV: # TODO: 지금 작동 안됨...
+        pose = localregistration.opencv_icp(source_node, target_node, initial_transformation)
+    elif method == Method.OPEN3D_DEFAULT:
+        pose = localregistration.open3d_icp(source_node, target_node, initial_transformation, voxel_size)
+    elif method == Method.OPEN3D_GREATEST:
+        pose = localregistration.open3d_gicp(source_node, target_node, initial_transformation, voxel_size)
+    elif method == Method.OPEN3D_COLORED:
+        pose = localregistration.colored_icp(source_node, target_node, initial_transformation, voxel_size)
     print("Cost Time: %.3f sec" % (time.time() - start))
     return pose
 

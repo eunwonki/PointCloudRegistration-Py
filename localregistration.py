@@ -3,6 +3,14 @@ import open3d as o3d
 import numpy as np
 
 import util
+from enum import Enum
+
+
+class Method(Enum):
+    OPENCV = 0
+    OPEN3D_DEFAULT = 1
+    OPEN3D_GREATEST = 2
+    OPEN3D_COLORED = 3
 
 
 def open3d_icp(source_node, target_node, initial_transformation, voxel_size):
@@ -76,7 +84,7 @@ def colored_icp(source_node, target_node, initial_transformation, voxel_size):
     result = o3d.pipelines.registration.registration_colored_icp(
         source_pcd, target_pcd, voxel_size, initial_transformation,
         o3d.pipelines.registration.TransformationEstimationForColoredICP(
-            lambda_geometric=0.8   # default: 0.968000
+            lambda_geometric=0.8  # default: 0.968000
         ),
         o3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-6,
                                                           relative_rmse=1e-6,
